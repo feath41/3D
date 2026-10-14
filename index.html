@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rolex Submariner 3D Mesh Atelier</title>
+    <!-- Menghubungkan ke file CSS kita -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Memanggil Font bergaya teknis/monospasi dari Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Kanvas latar belakang untuk menampilkan objek 3D -->
+    <div id="canvas-container"></div>
+
+    <!-- HEADER ATAS -->
+    <header class="top-bar">
+        <div class="header-left">
+            <div class="sub-title">PARAMETRIC CAD HAUTE HORLOGERIE MESH // CALIBRE 3235</div>
+            <h1 class="main-title">ROLEX SUBMARINER 3D MESH ATELIER</h1>
+            <div class="poly-info">7-LAYER EXPLODED ANATOMY // 48,500+ POLYGONAL VERTICES</div>
+        </div>
+        <div class="header-right">
+            <div class="stat-box">
+                <span class="stat-label">WATCH TIME</span>
+                <span id="live-clock" class="stat-value">10:10:31</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">VERTICES</span>
+                <span class="stat-value">148,290</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">FACES</span>
+                <span class="stat-value">7421</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">MATERIAL SPEC</span>
+                <span id="active-spec" class="stat-value">18K EVEROSE GOLD & 904L STEEL</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- PANEL KIRI: DAFTAR 7 LAPISAN JAM -->
+    <aside class="left-panel">
+        <div class="panel-header">
+            <span>ANATOMY & LAYER PICK</span>
+            <span id="layer-status" class="highlight-green">// ALL LAYERS</span>
+        </div>
+
+        <button id="btn-overall" class="overall-btn active">
+            <span>🔍 Overall Watch View</span>
+            <span class="badge">ALL</span>
+        </button>
+
+        <!-- Daftar 7 Komponen yang akan diisi/diatur juga lewat interaksi JS -->
+        <div id="layer-list" class="layer-list">
+            <div class="layer-item" data-layer="0">
+                <span class="layer-num">01</span>
+                <div class="layer-text">
+                    <strong>Monobloc Sapphire & Cyclops</strong>
+                    <small>AR Coated // 2.5x Date Mag</small>
+                </div>
+            </div>
+            <div class="layer-item" data-layer="1">
+                <span class="layer-num">02</span>
+                <div class="layer-text">
+                    <strong>Fluted 18K Cerachrom Bezel</strong>
+                    <small>120-Notch Teeth + Knurling</small>
+                </div>
+            </div>
+            <div class="layer-item" data-layer="2">
+                <span class="layer-num">03</span>
+                <div class="layer-text">
+                    <strong>Diamond Faceted 3D Hands</strong>
+                    <small>Mercedes Tri-Star Sweep</small>
+                </div>
+            </div>
+            <div class="layer-item" data-layer="3">
+                <span class="layer-num">04</span>
+                <div class="layer-text">
+                    <strong>Sunburst Dial & Rehaut</strong>
+                    <small>Engraved Ring + Applique</small>
+                </div>
+            </div>
+            <div class="layer-item" data-layer="4">
+                <span class="layer-num">05</span>
+                <div class="layer-text">
+                    <strong>31-Day Date Disc & Stones</strong>
+                    <small>Mechanical Instant Jump</small>
+                </div>
+            </div>
+            <div class="layer-item" data-layer="5">
+                <span class="layer-num">06</span>
+                <div class="layer-text">
+                    <strong>Lathed Oyster Case & Bracelet</strong>
+                    <small>Triplock Crown + 5-Link</small>
+                </div>
+            </div>
+            <div class="layer-item" data-layer="6">
+                <span class="layer-num">07</span>
+                <div class="layer-text">
+                    <strong>Calibre 3235 Involute Gears</strong>
+                    <small>Chronergy Escapement + Balance</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kotak Deskripsi Detail di Kiri Bawah -->
+        <div class="cad-notes">
+            <div id="note-title" class="note-title">PARAMETRIC CAD NOTES</div>
+            <p id="note-desc">
+                Pilih salah satu lapisan di atas untuk mengisolasi dan memfokuskan kamera pada geometri, atau gunakan kontrol di sebelah kanan untuk membedah 7 lapisan mesin jam secara real-time.
+            </p>
+        </div>
+    </aside>
+
+    <!-- PANEL KANAN: KONTROL 3D INTERAKTIF -->
+    <aside class="right-panel">
+        <!-- Bagian 1: Exploded View -->
+        <div class="control-section">
+            <div class="section-header">
+                <span>01 // EXPLODED VIEW CONTROL</span>
+                <span id="explode-pct" class="highlight-gold">0% OPEN</span>
+            </div>
+            <input type="range" id="explode-slider" min="0" max="100" value="0" class="slider">
+            <div class="btn-grid-2">
+                <button id="btn-orbit" class="ctrl-btn active-gold">Auto-Orbit [ON]</button>
+                <button id="btn-explode" class="ctrl-btn">Bedah 8-Layer</button>
+            </div>
+            <button id="btn-animate-layers" class="ctrl-btn full-width">✦ ANIMASI BEDAH LAYER OTOMATIS</button>
+        </div>
+
+        <!-- Bagian 2: Mode Shading / Tampilan Jaring -->
+        <div class="control-section">
+            <div class="section-header">
+                <span>02 // 3D SHADING MESH & TOPOLOGY</span>
+            </div>
+            <div class="btn-grid-3">
+                <button class="ctrl-btn mode-btn active-gold" data-mode="pbr">PBR Luxury</button>
+                <button class="ctrl-btn mode-btn" data-mode="wire">Mesh / Wire</button>
+                <button class="ctrl-btn mode-btn" data-mode="xray">X-Ray Ghost</button>
+            </div>
+        </div>
+
+        <!-- Bagian 3: Warna Material -->
+        <div class="control-section">
+            <div class="section-header">
+                <span>03 // BESPOKE COLORWAY</span>
+            </div>
+            <div class="btn-grid-2">
+                <button class="ctrl-btn color-btn active-gold" data-theme="steel">
+                    <span class="dot" style="background: #e0dcd3;"></span> Rolesor Gold
+                </button>
+                <button class="ctrl-btn color-btn" data-theme="green">
+                    <span class="dot" style="background: #2b7a4b;"></span> Green 'Hulk'
+                </button>
+                <button class="ctrl-btn color-btn" data-theme="black">
+                    <span class="dot" style="background: #c88a65;"></span> Everose Black
+                </button>
+                <button class="ctrl-btn color-btn" data-theme="blue">
+                    <span class="dot" style="background: #5ca4d6;"></span> Ice Platinum
+                </button>
+            </div>
+        </div>
+
+        <!-- Bagian 4: Kontrol Tambahan (Putar Bezel & Fokus Cepat) -->
+        <div class="control-section">
+            <div class="section-header">
+                <span>04 // HOROLOGY COMPLICATIONS</span>
+                <span class="highlight-green">INTERACTIVE</span>
+            </div>
+            <button id="btn-bezel-click" class="ctrl-btn full-width">Putar Bezel (120-Click Unidirectional)</button>
+            <div class="btn-grid-2" style="margin-top: 6px;">
+                <button class="ctrl-btn quick-focus" data-target="all">Reset Kamera</button>
+                <button class="ctrl-btn quick-focus" data-target="4">Tanggal (14): +1</button>
+                <button class="ctrl-btn quick-focus" data-target="3">Fokus Dial</button>
+                <button class="ctrl-btn quick-focus" data-target="6">Fokus Mesin</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- FOOTER BAWAH: PETUNJUK MOUSE -->
+    <footer class="bottom-bar">
+        <span>[DRAG]</span> MEMUTAR SUDUT 360° &nbsp;|&nbsp; 
+        <span>[SCROLL]</span> ZOOM MAKRO &nbsp;|&nbsp; 
+        <span>[KLIK PART / UI]</span> ISOLASI KOMPONEN MESH
+    </footer>
+
+    <!-- Memanggil Pustaka Three.js dan OrbitControls dari Internet (CDN) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Menghubungkan ke file JavaScript kita -->
+    <script src="script.js"></script>
+</body>
+</html>
