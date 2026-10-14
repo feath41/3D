@@ -4,147 +4,159 @@
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
 
-// Kamera untuk melihat objek 3D
-const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 6, 15);
+// Kamera diatur agar sudut pandang jam terlihat jelas dari depan-atas
+const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 7, 13);
 
-// Renderer untuk menggambar 3D ke layar
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 container.appendChild(renderer.domElement);
 
-// OrbitControls supaya pengguna bisa memutar dan zoom jam dengan mouse
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
 controls.autoRotate = true;
 controls.autoRotateSpeed = 1.0;
 
-// Pencahayaan agar jam tangan terlihat mengkilap seperti logam mewah
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+// Pencahayaan studio mewah (tidak terlalu silau agar tidak putih polos)
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
 scene.add(ambientLight);
 
-const dirLight1 = new THREE.DirectionalLight(0xfff5e1, 1.4);
-dirLight1.position.set(10, 15, 12);
+const dirLight1 = new THREE.DirectionalLight(0xfff5e1, 1.1);
+dirLight1.position.set(8, 15, 10);
 scene.add(dirLight1);
 
-const dirLight2 = new THREE.DirectionalLight(0x52b788, 0.6);
-dirLight2.position.set(-10, -10, -8);
+const dirLight2 = new THREE.DirectionalLight(0x52b788, 0.45);
+dirLight2.position.set(-10, -8, -8);
 scene.add(dirLight2);
 
+const pointLight = new THREE.PointLight(0xe9c46a, 0.6, 25);
+pointLight.position.set(0, 5, 8);
+scene.add(pointLight);
+
 // ============================================================================
-// 2. DATA 7 LAPISAN ANATOMI JAM & VARIABEL PENGATUR (PARAMETER)
+// 2. DATA 7 LAPISAN JAM & PARAMETER POSISI (BISA DISESUAIKAN)
 // ============================================================================
-// Kamu bisa mengubah angka 'explodeY' di bawah ini untuk mengatur seberapa jauh
-// masing-masing komponen terpisah saat tombol Bedah Layer ditekan!
+// PARAMETER PENTING:
+// - baseY    : Posisi tumpukan asli saat 0% OPEN (agar jam terlihat utuh & rapi)
+// - explodeY : Jarak tambahan saat dibedah 100% OPEN
+const OPACITY_SAAT_REDUP = 0.12; // Seberapa transparan bagian yang TIDAK dipilih (0.05 - 0.3)
+const WARNA_HIGHLIGHT = 0x2b583a; // Pendaran cahaya tipis pada bagian yang dipilih
+
 const layerInfos = [
     {
         title: "L01 // MONOBLOC SAPPHIRE & CYCLOPS",
         desc: "Kaca kristal safir sintetis anti-gores dengan lapisan anti-reflektif ganda dan lensa pembesar Cyclops 2.5x di atas jendela tanggal.",
-        explodeY: 4.2,
-        camOffset: { x: 2, y: 5, z: 7 }
+        baseY: 0.32,
+        explodeY: 4.0
     },
     {
         title: "L02 // FLUTED 18K CERACHROM BEZEL",
         desc: "Cincin bezel putar satu arah (120-klik) dengan sisipan keramik Cerachrom tahan korosi dan gerigi tepi (knurling) untuk cengkeraman optimal.",
-        explodeY: 2.8,
-        camOffset: { x: 0, y: 4, z: 8 }
+        baseY: 0.22,
+        explodeY: 2.6
     },
     {
         title: "L03 // DIAMOND FACETED 3D HANDS",
-        desc: "Jarum jam, menit, dan detik bergaya Mercedes Tri-Star berlapis emas 18 karat dengan pendaran Chromalight biru di tempat gelap.",
-        explodeY: 1.6,
-        camOffset: { x: 0, y: 2, z: 6 }
+        desc: "Jarum jam, menit, dan detik bergaya Mercedes Tri-Star berlapis emas 18 karat dengan pendaran Chromalight di tempat gelap.",
+        baseY: 0.15,
+        explodeY: 1.5
     },
     {
         title: "L04 // SUNBURST DIAL & REHAUT",
         desc: "Pelat permukaan jam (Dial) dengan efek pantulan cahaya matahari (sunburst), indeks penanda jam luminescent, dan cincin dalam bertuliskan ROLEX.",
-        explodeY: 0.5,
-        camOffset: { x: 0, y: 2, z: 7 }
+        baseY: 0.05,
+        explodeY: 0.4
     },
     {
         title: "L05 // 31-DAY DATE DISC & STONES",
         desc: "Cakram kalender mekanis dengan 31 angka tanggal yang melompat secara instan tepat pada tengah malam.",
-        explodeY: -0.8,
-        camOffset: { x: 2, y: -1, z: 7 }
+        baseY: -0.05,
+        explodeY: -0.8
     },
     {
         title: "L06 // LATHED OYSTER CASE & BRACELET",
-        desc: "Bodi utama Oyster 41mm dari baja Oystersteel 904L, lengkap dengan pemutar Triplock Crown di samping dan rantai gelang 3-baris.",
-        explodeY: -2.2,
-        camOffset: { x: 4, y: -2, z: 10 }
+        desc: "Bodi utama Oyster 41mm dari baja Oystersteel 904L, lengkap dengan pemutar Triplock Crown di samping dan rantai gelang 5-baris.",
+        baseY: 0.0,
+        explodeY: -2.1
     },
     {
         title: "L07 // CALIBRE 3235 INVOLUTE GEARS",
-        desc: "Mesin penggerak mekanis otomatis Calibre 3235 dengan roda gigi merah muda (reversing wheels), balance wheel, dan rotor Perpetual berlubang.",
-        explodeY: -3.8,
-        camOffset: { x: -3, y: -4, z: 8 }
+        desc: "Mesin penggerak mekanis otomatis Calibre 3235 dengan roda gigi merah muda (reversing wheels), balance wheel, dan rotor Perpetual.",
+        baseY: -0.25,
+        explodeY: -3.6
     }
 ];
 
-// Grup utama penampung 7 lapisan
 const watchRoot = new THREE.Group();
-// Miringkan sedikit jam tangan supaya tampak depan-miring seperti di video
-watchRoot.rotation.x = 0.85;
+// Kemiringan jam agar tampak elegan menghadap kamera
+watchRoot.rotation.x = 0.75;
 scene.add(watchRoot);
 
 const layerGroups = [];
 for (let i = 0; i < 7; i++) {
     const grp = new THREE.Group();
+    grp.position.y = layerInfos[i].baseY;
     watchRoot.add(grp);
     layerGroups.push(grp);
 }
 
 // ============================================================================
-// 3. MATERIAL & TEKSTUR DINAMIS (KANVAS 2D UNTUK ANGKA & TULISAN DIAL)
+// 3. TEKSTUR KANVAS 2D (DIAL, BEZEL, DAN CAKRAM TANGGAL)
 // ============================================================================
-// Fungsi membuat gambar Dial (Permukaan Jam) secara otomatis lewat kode
 function createDialTexture(bgColorHex) {
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
 
-    // Warna latar belakang dial
-    ctx.fillStyle = bgColorHex;
+    // Efek gradasi Sunburst di tengah Dial
+    const grad = ctx.createRadialGradient(256, 256, 10, 256, 256, 256);
+    grad.addColorStop(0, '#8e8a83');
+    grad.addColorStop(1, bgColorHex);
+    ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 512, 512);
 
-    // Garis-garis menit di tepi
     ctx.strokeStyle = '#ffffff';
     ctx.translate(256, 256);
     for (let i = 0; i < 60; i++) {
         ctx.beginPath();
-        ctx.lineWidth = (i % 5 === 0) ? 3 : 1;
-        const len = (i % 5 === 0) ? 18 : 10;
-        ctx.moveTo(0, -230);
-        ctx.lineTo(0, -230 + len);
+        ctx.lineWidth = (i % 5 === 0) ? 3 : 1.2;
+        const len = (i % 5 === 0) ? 16 : 9;
+        ctx.moveTo(0, -232);
+        ctx.lineTo(0, -232 + len);
         ctx.stroke();
         ctx.rotate(Math.PI / 30);
     }
 
-    // Tulisan ROLEX & SUBMARINER
-    ctx.fillStyle = '#f8f9fa';
-    ctx.font = 'bold 26px serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 24px serif';
     ctx.textAlign = 'center';
     ctx.fillText('♛', 0, -135);
-    ctx.fillText('ROLEX', 0, -105);
-    ctx.font = '13px monospace';
-    ctx.fillText('OYSTER PERPETUAL DATE', 0, -85);
+    ctx.fillText('ROLEX', 0, -108);
+    ctx.font = '11px monospace';
+    ctx.fillText('OYSTER PERPETUAL DATE', 0, -90);
 
     ctx.fillStyle = '#e9c46a';
-    ctx.font = 'bold 16px monospace';
-    ctx.fillText('SUBMARINER', 0, 95);
+    ctx.font = 'bold 15px monospace';
+    ctx.fillText('SUBMARINER', 0, 90);
     ctx.fillStyle = '#d8e2dc';
-    ctx.font = '12px monospace';
-    ctx.fillText('1000ft = 300m', 0, 115);
-    ctx.fillText('SUPERLATIVE CHRONOMETER', 0, 132);
-    ctx.fillText('OFFICIALLY CERTIFIED', 0, 147);
+    ctx.font = '11px monospace';
+    ctx.fillText('1000ft = 300m', 0, 108);
+    ctx.fillText('SUPERLATIVE CHRONOMETER', 0, 124);
+    ctx.fillText('OFFICIALLY CERTIFIED', 0, 138);
+
+    // Lubang transparan semu di posisi jam 3 untuk menampilkan tanggal
+    ctx.fillStyle = '#f4f1ea';
+    ctx.fillRect(130, -22, 65, 44);
+    ctx.fillStyle = '#111111';
+    ctx.font = 'bold 26px monospace';
+    ctx.fillText(String(currentDateNumber), 162, 8);
 
     return new THREE.CanvasTexture(canvas);
 }
 
-// Fungsi membuat gambar Cincin Bezel (Angka 10, 20, 30, 40, 50)
 function createBezelTexture(bezelHex) {
     const canvas = document.createElement('canvas');
     canvas.width = 512;
@@ -155,8 +167,8 @@ function createBezelTexture(bezelHex) {
     ctx.fillRect(0, 0, 512, 512);
 
     ctx.translate(256, 256);
-    ctx.fillStyle = '#e5e5e5';
-    ctx.font = 'bold 30px sans-serif';
+    ctx.fillStyle = '#f1faee';
+    ctx.font = 'bold 34px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
@@ -165,19 +177,20 @@ function createBezelTexture(bezelHex) {
         ctx.save();
         ctx.rotate(angle);
         if (i === 0) {
-            ctx.fillText('▼', 0, -200);
+            ctx.fillText('▼', 0, -210);
         } else if (i % 2 === 0) {
-            ctx.fillText((i * 5).toString(), 0, -200);
+            ctx.fillText((i * 5).toString(), 0, -210);
         } else {
-            ctx.fillRect(-3, -210, 6, 20);
+            ctx.fillRect(-4, -222, 8, 22);
         }
         ctx.restore();
     }
     return new THREE.CanvasTexture(canvas);
 }
 
-// Fungsi membuat gambar Cakram Tanggal (Angka 1 - 31)
 let currentDateNumber = 14;
+let currentDialHex = '#4a4742';
+
 function createDateTexture() {
     const canvas = document.createElement('canvas');
     canvas.width = 512;
@@ -189,7 +202,7 @@ function createDateTexture() {
 
     ctx.translate(256, 256);
     ctx.fillStyle = '#111111';
-    ctx.font = 'bold 28px monospace';
+    ctx.font = 'bold 26px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
@@ -203,188 +216,205 @@ function createDateTexture() {
     return new THREE.CanvasTexture(canvas);
 }
 
-// Daftar Material Utama yang mudah diganti warnanya
-const mats = {
-    steel: new THREE.MeshStandardMaterial({ color: 0xf0ede6, metalness: 0.75, roughness: 0.25 }),
-    gold: new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.85, roughness: 0.2 }),
-    dial: new THREE.MeshStandardMaterial({ map: createDialTexture('#5c5852'), metalness: 0.5, roughness: 0.3 }),
-    bezelInsert: new THREE.MeshStandardMaterial({ map: createBezelTexture('#8a857d'), metalness: 0.4, roughness: 0.2 }),
-    glass: new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.32, roughness: 0.05, metalness: 0.1 }),
-    lume: new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x224433, emissiveIntensity: 0.3 }),
+// ============================================================================
+// 4. PEMBUATAN MATERIAL & RAKITAN 7 LAPISAN JAM TANGAN
+// ============================================================================
+const baseMaterials = {
+    steel: new THREE.MeshStandardMaterial({ color: 0xd8d5ce, metalness: 0.65, roughness: 0.3 }),
+    gold: new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.75, roughness: 0.25 }),
+    dial: new THREE.MeshStandardMaterial({ map: createDialTexture(currentDialHex), metalness: 0.3, roughness: 0.4 }),
+    bezelInsert: new THREE.MeshStandardMaterial({ map: createBezelTexture('#7a756c'), metalness: 0.3, roughness: 0.25 }),
+    glass: new THREE.MeshPhysicalMaterial({ color: 0xdff6ff, transparent: true, opacity: 0.22, roughness: 0.05, metalness: 0.1, depthWrite: false }),
+    lume: new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x1b4332, emissiveIntensity: 0.25, roughness: 0.2 }),
     dateDisc: new THREE.MeshStandardMaterial({ map: createDateTexture(), roughness: 0.4 }),
-    rubyGear: new THREE.MeshStandardMaterial({ color: 0xd93870, metalness: 0.6, roughness: 0.3 }),
-    brassGear: new THREE.MeshStandardMaterial({ color: 0xe9c46a, metalness: 0.8, roughness: 0.25 })
+    rubyGear: new THREE.MeshStandardMaterial({ color: 0xd93870, metalness: 0.5, roughness: 0.3 }),
+    brassGear: new THREE.MeshStandardMaterial({ color: 0xe9c46a, metalness: 0.75, roughness: 0.25 })
 };
 
-// ============================================================================
-// 4. MERAKIT 7 KOMPONEN JAM TANGAN 3D
-// ============================================================================
-
-// --- LAPISAN 01: Kaca Safir & Lensa Pembesar Cyclops ---
-const crystalGeo = new THREE.CylinderGeometry(2.55, 2.55, 0.12, 64);
-const crystalMesh = new THREE.Mesh(crystalGeo, mats.glass);
-layerGroups[0].add(crystalMesh);
-
-// Lensa Cyclops di posisi jam 3 (di atas tanggal)
-const cyclopsGeo = new THREE.BoxGeometry(0.65, 0.14, 0.5);
-const cyclopsMesh = new THREE.Mesh(cyclopsGeo, mats.glass);
-cyclopsMesh.position.set(1.65, 0.08, 0);
-layerGroups[0].add(cyclopsMesh);
-
-// --- LAPISAN 02: Cincin Bezel bergerigi ---
-const bezelGroup = new THREE.Group();
-const bezelRingGeo = new THREE.CylinderGeometry(3.05, 3.12, 0.26, 64, 1, true);
-const bezelRing = new THREE.Mesh(bezelRingGeo, mats.steel);
-bezelGroup.add(bezelRing);
-
-const bezelTopGeo = new THREE.RingGeometry(2.45, 3.05, 64);
-bezelTopGeo.rotateX(-Math.PI / 2);
-const bezelTop = new THREE.Mesh(bezelTopGeo, mats.bezelInsert);
-bezelTop.position.y = 0.13;
-bezelGroup.add(bezelTop);
-
-// Gerigi di pinggir bezel
-for (let i = 0; i < 60; i++) {
-    const toothGeo = new THREE.BoxGeometry(0.08, 0.24, 0.12);
-    const tooth = new THREE.Mesh(toothGeo, mats.gold);
-    const angle = (i / 60) * Math.PI * 2;
-    tooth.position.set(Math.cos(angle) * 3.1, 0, Math.sin(angle) * 3.1);
-    tooth.rotation.y = -angle;
-    bezelGroup.add(tooth);
+// Fungsi pembantu untuk menambahkan komponen ke dalam Lapisan tertentu
+// Setiap komponen diberi material miliknya sendiri (clone) agar bisa di-highlight terpisah!
+const allWatchMeshes = [];
+function addPartToLayer(layerIdx, geometry, baseMatKey) {
+    const mat = baseMaterials[baseMatKey].clone();
+    mat.userData = {
+        baseKey: baseMatKey,
+        defaultOpacity: (baseMatKey === 'glass') ? 0.22 : 1.0,
+        defaultTransparent: (baseMatKey === 'glass')
+    };
+    const mesh = new THREE.Mesh(geometry, mat);
+    mesh.userData = { layerIndex: layerIdx };
+    layerGroups[layerIdx].add(mesh);
+    allWatchMeshes.push(mesh);
+    return mesh;
 }
+
+// --- LAPISAN 01: Kaca Safir & Lensa Cyclops ---
+addPartToLayer(0, new THREE.CylinderGeometry(2.42, 2.42, 0.06, 64), 'glass');
+const cyclops = addPartToLayer(0, new THREE.BoxGeometry(0.62, 0.1, 0.48), 'glass');
+cyclops.position.set(1.55, 0.06, 0);
+
+// --- LAPISAN 02: Cincin Bezel (Berlubang di tengah agar Dial terlihat!) ---
+const bezelGroup = new THREE.Group();
 layerGroups[1].add(bezelGroup);
 
-// --- LAPISAN 03: Jarum Jam 3D (Jam, Menit, Detik) ---
+function addBezelPart(geo, matKey) {
+    const mat = baseMaterials[matKey].clone();
+    mat.userData = { baseKey: matKey, defaultOpacity: 1.0, defaultTransparent: false };
+    const m = new THREE.Mesh(geo, mat);
+    m.userData = { layerIndex: 1 };
+    bezelGroup.add(m);
+    allWatchMeshes.push(m);
+    return m;
+}
+
+// Cincin keramik atas Bezel
+const bezelTopGeo = new THREE.RingGeometry(2.38, 3.05, 64);
+bezelTopGeo.rotateX(-Math.PI / 2);
+const bezelTop = addBezelPart(bezelTopGeo, 'bezelInsert');
+bezelTop.position.y = 0.08;
+
+// Sabuk luar Bezel
+const bezelRim = addBezelPart(new THREE.TorusGeometry(3.05, 0.09, 16, 64), 'steel');
+bezelRim.rotation.x = Math.PI / 2;
+
+// Gerigi emas di tepi Bezel
+for (let i = 0; i < 60; i++) {
+    const tooth = addBezelPart(new THREE.BoxGeometry(0.07, 0.16, 0.1), 'gold');
+    const angle = (i / 60) * Math.PI * 2;
+    tooth.position.set(Math.cos(angle) * 3.12, 0, Math.sin(angle) * 3.12);
+    tooth.rotation.y = -angle;
+}
+
+// --- LAPISAN 03: Jarum Jam 3D ---
 const hourHand = new THREE.Group();
-const hMesh = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 1.35), mats.gold);
-hMesh.position.z = -0.5;
+const hMesh = addPartToLayer(2, new THREE.BoxGeometry(0.16, 0.03, 1.3), 'gold');
+hMesh.position.z = -0.45;
 hourHand.add(hMesh);
 layerGroups[2].add(hourHand);
 
 const minHand = new THREE.Group();
-const mMesh = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.04, 1.95), mats.gold);
-mMesh.position.z = -0.8;
-minHand.position.y = 0.04;
+const mMesh = addPartToLayer(2, new THREE.BoxGeometry(0.11, 0.03, 1.85), 'gold');
+mMesh.position.z = -0.75;
+minHand.position.y = 0.03;
 minHand.add(mMesh);
 layerGroups[2].add(minHand);
 
 const secHand = new THREE.Group();
-const sMesh = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.03, 2.2), mats.gold);
-sMesh.position.z = -0.85;
-secHand.position.y = 0.08;
+const sMesh = addPartToLayer(2, new THREE.BoxGeometry(0.035, 0.02, 2.05), 'gold');
+sMesh.position.z = -0.8;
+secHand.position.y = 0.06;
 secHand.add(sMesh);
 layerGroups[2].add(secHand);
 
-// --- LAPISAN 04: Sunburst Dial & Indeks Jam Timbul ---
-const dialGeo = new THREE.CylinderGeometry(2.5, 2.5, 0.08, 64);
-const dialMesh = new THREE.Mesh(dialGeo, mats.dial);
-layerGroups[3].add(dialMesh);
+// Poros tengah jarum jam
+addPartToLayer(2, new THREE.CylinderGeometry(0.14, 0.14, 0.12, 24), 'gold');
 
-// Rehaut (Cincin dalam di pinggir dial)
-const rehautGeo = new THREE.CylinderGeometry(2.55, 2.45, 0.22, 64, 1, true);
-const rehautMesh = new THREE.Mesh(rehautGeo, mats.steel);
-rehautMesh.position.y = 0.1;
-layerGroups[3].add(rehautMesh);
+// --- LAPISAN 04: Sunburst Dial & Indeks Jam ---
+addPartToLayer(3, new THREE.CylinderGeometry(2.42, 2.42, 0.05, 64), 'dial');
 
-// Indeks Penanda Jam Bulat & Persegi Panjang
+// Rehaut (dinding cincin dalam di pinggir dial)
+const rehaut = addPartToLayer(3, new THREE.TorusGeometry(2.42, 0.08, 16, 64), 'steel');
+rehaut.rotation.x = Math.PI / 2;
+rehaut.position.y = 0.06;
+
+// Indeks Penanda Jam Timbul
 for (let i = 0; i < 12; i++) {
-    if (i === 3) continue; // Posisi jam 3 dikosongkan untuk jendela tanggal
+    if (i === 3) continue; // Jam 3 untuk tanggal
     const angle = (i * 30) * Math.PI / 180;
     let markerGeo;
     if (i === 0) {
-        markerGeo = new THREE.ConeGeometry(0.22, 0.08, 3);
+        markerGeo = new THREE.ConeGeometry(0.2, 0.06, 3);
     } else if (i === 6 || i === 9) {
-        markerGeo = new THREE.BoxGeometry(0.16, 0.08, 0.38);
+        markerGeo = new THREE.BoxGeometry(0.15, 0.06, 0.35);
     } else {
-        markerGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.08, 24);
+        markerGeo = new THREE.CylinderGeometry(0.13, 0.13, 0.06, 24);
     }
-    const marker = new THREE.Mesh(markerGeo, mats.lume);
-    marker.position.set(Math.sin(angle) * 1.9, 0.06, -Math.cos(angle) * 1.9);
+    const marker = addPartToLayer(3, markerGeo, 'lume');
+    marker.position.set(Math.sin(angle) * 1.85, 0.04, -Math.cos(angle) * 1.85);
     marker.rotation.y = -angle;
-    layerGroups[3].add(marker);
 }
 
-// Bingkai Jendela Tanggal di jam 3
-const dateFrame = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.09, 0.42), mats.gold);
-dateFrame.position.set(1.65, 0.05, 0);
-layerGroups[3].add(dateFrame);
+// Bingkai emas jendela tanggal di posisi jam 3
+const dateFrame = addPartToLayer(3, new THREE.BoxGeometry(0.55, 0.06, 0.42), 'gold');
+dateFrame.position.set(1.55, 0.02, 0);
 
 // --- LAPISAN 05: Cakram Tanggal 31-Hari ---
-const dateRingGeo = new THREE.CylinderGeometry(2.2, 2.2, 0.06, 64);
-const dateDiscMesh = new THREE.Mesh(dateRingGeo, mats.dateDisc);
-layerGroups[4].add(dateDiscMesh);
+const dateRingGeo = new THREE.RingGeometry(1.3, 2.25, 64);
+dateRingGeo.rotateX(-Math.PI / 2);
+const dateDiscMesh = addPartToLayer(4, dateRingGeo, 'dateDisc');
 
-// --- LAPISAN 06: Casing Oyster, Crown Pemutar & Rantai Gelang ---
-const caseOuter = new THREE.Mesh(new THREE.CylinderGeometry(3.15, 3.0, 0.75, 64), mats.steel);
-layerGroups[5].add(caseOuter);
+// --- LAPISAN 06: Casing Oyster Berongga & Rantai Gelang ---
+// Casing dibuat berlubang di tengah (Torus tebal) agar TIDAK menelan Dial saat 0% OPEN!
+const caseBody = addPartToLayer(5, new THREE.TorusGeometry(2.78, 0.38, 24, 64), 'steel');
+caseBody.rotation.x = Math.PI / 2;
+caseBody.scale.set(1, 1, 0.85);
 
-// Triplock Crown (Pemutar jam di sebelah kanan)
-const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.45, 24), mats.gold);
+// 4 Lug (Bahu penyambung casing ke rantai)
+const lugPositions = [
+    { x: -1.8, z: -2.8, rot: 0.2 },
+    { x: 1.8, z: -2.8, rot: -0.2 },
+    { x: -1.8, z: 2.8, rot: -0.2 },
+    { x: 1.8, z: 2.8, rot: 0.2 }
+];
+lugPositions.forEach(lp => {
+    const lug = addPartToLayer(5, new THREE.BoxGeometry(0.55, 0.42, 1.1), 'steel');
+    lug.position.set(lp.x, -0.05, lp.z);
+    lug.rotation.y = lp.rot;
+});
+
+// Crown Pemutar Jam di Samping Kanan
+const crown = addPartToLayer(5, new THREE.CylinderGeometry(0.32, 0.32, 0.42, 24), 'gold');
 crown.rotation.z = Math.PI / 2;
-crown.position.set(3.35, 0, 0);
-layerGroups[5].add(crown);
+crown.position.set(3.32, -0.02, 0);
 
-// Fungsi membuat susunan rantai gelang (Bracelet) atas & bawah
-function createBraceletSide(dirZ) {
-    const braceletGrp = new THREE.Group();
+// Rantai Gelang (Bracelet) Atas & Bawah
+function buildBracelet(dirZ) {
     for (let row = 0; row < 6; row++) {
-        const zPos = dirZ * (3.25 + row * 0.58);
-        const yCurve = -Math.pow(row * 0.25, 1.8); // Melengkung ke bawah
-        const widthScale = 1 - (row * 0.04);
+        const zPos = dirZ * (3.25 + row * 0.56);
+        const yCurve = -0.08 - Math.pow(row * 0.22, 1.7);
+        const widthScale = 1 - (row * 0.035);
 
-        // 5 Baris mata rantai (Tengah emas, pinggir baja)
         for (let col = -2; col <= 2; col++) {
             const isCenter = (col === 0);
-            const linkGeo = new THREE.BoxGeometry(0.62 * widthScale, 0.28, 0.5);
-            const linkMesh = new THREE.Mesh(linkGeo, isCenter ? mats.gold : mats.steel);
-            linkMesh.position.set(col * 0.68 * widthScale, yCurve, zPos);
-            linkMesh.rotation.x = dirZ * (row * 0.08);
-            braceletGrp.add(linkMesh);
+            const link = addPartToLayer(5, new THREE.BoxGeometry(0.6 * widthScale, 0.24, 0.48), isCenter ? 'gold' : 'steel');
+            link.position.set(col * 0.65 * widthScale, yCurve, zPos);
+            link.rotation.x = dirZ * (row * 0.07);
         }
     }
-    return braceletGrp;
 }
-layerGroups[5].add(createBraceletSide(1));
-layerGroups[5].add(createBraceletSide(-1));
+buildBracelet(1);
+buildBracelet(-1);
 
 // --- LAPISAN 07: Mesin Calibre 3235, Roda Gigi & Rotor ---
-const basePlate = new THREE.Mesh(new THREE.CylinderGeometry(2.35, 2.35, 0.15, 64), mats.steel);
-layerGroups[6].add(basePlate);
+addPartToLayer(6, new THREE.CylinderGeometry(2.3, 2.3, 0.12, 64), 'steel');
 
-// Roda Gigi Merah Muda khas Rolex (Reversing Wheels)
-const gear1 = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.22, 24), mats.rubyGear);
-gear1.position.set(-0.7, 0.12, 0.5);
-layerGroups[6].add(gear1);
+const gear1 = addPartToLayer(6, new THREE.CylinderGeometry(0.52, 0.52, 0.18, 24), 'rubyGear');
+gear1.position.set(-0.65, 0.1, 0.45);
 
-const gear2 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.22, 20), mats.rubyGear);
-gear2.position.set(0.3, 0.12, 0.8);
-layerGroups[6].add(gear2);
+const gear2 = addPartToLayer(6, new THREE.CylinderGeometry(0.42, 0.42, 0.18, 20), 'rubyGear');
+gear2.position.set(0.3, 0.1, 0.75);
 
-// Balance Wheel Emas
-const balanceWheel = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.06, 16, 32), mats.brassGear);
+const balanceWheel = addPartToLayer(6, new THREE.TorusGeometry(0.48, 0.05, 16, 32), 'brassGear');
 balanceWheel.rotation.x = Math.PI / 2;
-balanceWheel.position.set(0.8, 0.15, -0.6);
-layerGroups[6].add(balanceWheel);
+balanceWheel.position.set(0.75, 0.12, -0.55);
 
-// Rotor Berputar Setengah Lingkaran di Bawah
-const rotorGeo = new THREE.CylinderGeometry(2.2, 2.2, 0.1, 32, 1, false, 0, Math.PI);
-const rotorMesh = new THREE.Mesh(rotorGeo, mats.steel);
-rotorMesh.position.y = -0.25;
-layerGroups[6].add(rotorMesh);
+const rotorGeo = new THREE.CylinderGeometry(2.15, 2.15, 0.08, 32, 1, false, 0, Math.PI);
+const rotorMesh = addPartToLayer(6, rotorGeo, 'steel');
+rotorMesh.position.y = -0.18;
 
-// Cincin Penutup Belakang (Caseback)
-const caseBack = new THREE.Mesh(new THREE.TorusGeometry(2.5, 0.25, 16, 64), mats.steel);
+const caseBack = addPartToLayer(6, new THREE.TorusGeometry(2.4, 0.2, 16, 64), 'steel');
 caseBack.rotation.x = Math.PI / 2;
-caseBack.position.y = -0.55;
-layerGroups[6].add(caseBack);
+caseBack.position.y = -0.35;
 
 // ============================================================================
-// 5. LOGIKA INTERAKSI TOMBOL, SLIDER, DAN ANIMASI
+// 5. LOGIKA HIGHLIGHT BAGIAN JAM & TOMBOL INTERAKTIF
 // ============================================================================
-let targetExplode = 0; // 0 = Menyatu, 1 = Terbuka penuh
+let targetExplode = 0;
 let currentExplode = 0;
 let autoAnimateExplode = false;
 let animDirection = 1;
+let currentShadingMode = 'pbr'; // 'pbr', 'wire', atau 'xray'
+let selectedLayerIndex = 'all'; // 'all' atau angka 0 - 6
 
 const slider = document.getElementById('explode-slider');
 const explodePct = document.getElementById('explode-pct');
@@ -396,7 +426,55 @@ function updateExplodeUI(val) {
     explodePct.innerText = `${Math.round(val * 100)}% OPEN`;
 }
 
-// Saat Slider digeser
+// Fungsi Utama untuk Mengatur Tampilan Material & Efek Highlight Bagian Jam
+function applyVisualState() {
+    allWatchMeshes.forEach(mesh => {
+        const mat = mesh.material;
+        const mLayer = mesh.userData.layerIndex;
+
+        // 1. Atur mode Wireframe / X-Ray terlebih dahulu
+        if (currentShadingMode === 'wire') {
+            mat.wireframe = true;
+        } else {
+            mat.wireframe = false;
+        }
+
+        // 2. Jika pilih "ALL" (Overall Watch View) -> Tampilkan Normal Tanpa Highlight!
+        if (selectedLayerIndex === 'all') {
+            if (mat.emissive && mat.userData.baseKey !== 'lume') {
+                mat.emissive.setHex(0x000000);
+            }
+            if (currentShadingMode === 'xray') {
+                mat.transparent = true;
+                mat.opacity = 0.25;
+            } else {
+                mat.transparent = mat.userData.defaultTransparent;
+                mat.opacity = mat.userData.defaultOpacity;
+            }
+        } 
+        // 3. Jika memilih salah satu tab bagian jam (0 - 6) -> HIGHLIGHT bagian itu saja!
+        else {
+            if (mLayer === selectedLayerIndex) {
+                // Bagian yang dipilih: Tampilkan terang, jelas, dan beri sedikit efek cahaya
+                mat.transparent = (mat.userData.baseKey === 'glass');
+                mat.opacity = (mat.userData.baseKey === 'glass') ? 0.65 : 1.0;
+                if (mat.emissive && mat.userData.baseKey !== 'lume') {
+                    mat.emissive.setHex(WARNA_HIGHLIGHT);
+                }
+            } else {
+                // Bagian yang TIDAK dipilih: Redupkan menjadi transparan (hantu)
+                mat.transparent = true;
+                mat.opacity = OPACITY_SAAT_REDUP;
+                if (mat.emissive && mat.userData.baseKey !== 'lume') {
+                    mat.emissive.setHex(0x000000);
+                }
+            }
+        }
+        mat.needsUpdate = true;
+    });
+}
+
+// Event Slider & Tombol Explode
 slider.addEventListener('input', (e) => {
     autoAnimateExplode = false;
     btnAnimateLayers.classList.remove('active-gold');
@@ -404,7 +482,6 @@ slider.addEventListener('input', (e) => {
     explodePct.innerText = `${e.target.value}% OPEN`;
 });
 
-// Tombol Bedah 8-Layer
 btnExplode.addEventListener('click', () => {
     autoAnimateExplode = false;
     btnAnimateLayers.classList.remove('active-gold');
@@ -413,13 +490,11 @@ btnExplode.addEventListener('click', () => {
     updateExplodeUI(targetExplode);
 });
 
-// Tombol Animasi Bedah Layer Otomatis (Maju-Mundur)
 btnAnimateLayers.addEventListener('click', () => {
     autoAnimateExplode = !autoAnimateExplode;
     btnAnimateLayers.classList.toggle('active-gold', autoAnimateExplode);
 });
 
-// Tombol Auto-Orbit [ON/OFF]
 const btnOrbit = document.getElementById('btn-orbit');
 btnOrbit.addEventListener('click', () => {
     controls.autoRotate = !controls.autoRotate;
@@ -427,7 +502,7 @@ btnOrbit.addEventListener('click', () => {
     btnOrbit.classList.toggle('active-gold', controls.autoRotate);
 });
 
-// Memilih Lapisan di Panel Kiri (Isolasi Komponen & Fokus Kamera)
+// Navigasi Panel Kiri (Pemilihan Bagian Jam)
 const layerItems = document.querySelectorAll('.layer-item');
 const btnOverall = document.getElementById('btn-overall');
 const noteTitle = document.getElementById('note-title');
@@ -435,6 +510,7 @@ const noteDesc = document.getElementById('note-desc');
 const layerStatus = document.getElementById('layer-status');
 
 function selectLayer(index) {
+    selectedLayerIndex = index;
     layerItems.forEach(item => item.classList.remove('active'));
 
     if (index === 'all') {
@@ -442,16 +518,6 @@ function selectLayer(index) {
         layerStatus.innerText = "// ALL LAYERS";
         noteTitle.innerText = "PARAMETRIC CAD NOTES";
         noteDesc.innerText = "Menampilkan keseluruhan rakitan 7 lapisan Rolex Submariner. Gunakan slider di kanan untuk membedah mesin.";
-        
-        // Kembalikan transparansi semua layer menjadi jelas
-        layerGroups.forEach((grp) => {
-            grp.traverse((child) => {
-                if (child.isMesh && child.material !== mats.glass) {
-                    child.material.transparent = false;
-                    child.material.opacity = 1.0;
-                }
-            });
-        });
     } else {
         btnOverall.classList.remove('active');
         layerItems[index].classList.add('active');
@@ -459,13 +525,10 @@ function selectLayer(index) {
         layerStatus.innerText = `// LAYER 0${index + 1}`;
         noteTitle.innerText = info.title;
         noteDesc.innerText = info.desc;
-
-        // Buka sedikit layer supaya bagian yang dipilih terlihat jelas
-        if (targetExplode < 0.6) {
-            targetExplode = 0.75;
-            updateExplodeUI(targetExplode);
-        }
     }
+
+    // Terapkan efek Highlight hanya pada bagian yang dipilih
+    applyVisualState();
 }
 
 btnOverall.addEventListener('click', () => selectLayer('all'));
@@ -476,45 +539,25 @@ layerItems.forEach((item) => {
     });
 });
 
-// Mode Shading: PBR Luxury, Mesh / Wire, X-Ray Ghost
+// Mode Shading (PBR Luxury, Mesh / Wire, X-Ray Ghost)
 const modeBtns = document.querySelectorAll('.mode-btn');
 modeBtns.forEach(btn => {
     btn.addEventListener('click', () => {
         modeBtns.forEach(b => b.classList.remove('active-gold'));
         btn.classList.add('active-gold');
-        const mode = btn.getAttribute('data-mode');
-
-        Object.values(mats).forEach(mat => {
-            if (mode === 'wire') {
-                mat.wireframe = true;
-                mat.transparent = false;
-                mat.opacity = 1.0;
-            } else if (mode === 'xray') {
-                mat.wireframe = false;
-                mat.transparent = true;
-                mat.opacity = 0.28;
-            } else {
-                mat.wireframe = false;
-                if (mat !== mats.glass) {
-                    mat.transparent = false;
-                    mat.opacity = 1.0;
-                } else {
-                    mat.transparent = true;
-                    mat.opacity = 0.32;
-                }
-            }
-        });
+        currentShadingMode = btn.getAttribute('data-mode');
+        applyVisualState();
     });
 });
 
-// Ganti Warna Tema (Bespoke Colorway)
+// Warna Tema (Bespoke Colorway)
 const colorBtns = document.querySelectorAll('.color-btn');
 const activeSpec = document.getElementById('active-spec');
 const colorThemes = {
-    steel: { gold: 0xd4af37, dial: '#5c5852', bezel: '#8a857d', spec: '18K EVEROSE GOLD & 904L STEEL' },
-    green: { gold: 0xe0dcd3, dial: '#1b4d2e', bezel: '#2b7a4b', spec: 'GREEN CERACHROM HULK EDITION' },
+    steel: { gold: 0xd4af37, dial: '#4a4742', bezel: '#7a756c', spec: '18K EVEROSE GOLD & 904L STEEL' },
+    green: { gold: 0xd8d5ce, dial: '#163d24', bezel: '#2b7a4b', spec: 'GREEN CERACHROM HULK EDITION' },
     black: { gold: 0xc88a65, dial: '#141414', bezel: '#1f1f1f', spec: '18K EVEROSE BLACK SUBMARINER' },
-    blue:  { gold: 0xdbe4ee, dial: '#4a7c9b', bezel: '#2c4d63', spec: '950 PLATINUM ICE BLUE DIAL' }
+    blue:  { gold: 0xdbe4ee, dial: '#3b6985', bezel: '#244254', spec: '950 PLATINUM ICE BLUE DIAL' }
 };
 
 colorBtns.forEach(btn => {
@@ -523,10 +566,17 @@ colorBtns.forEach(btn => {
         btn.classList.add('active-gold');
         const themeKey = btn.getAttribute('data-theme');
         const t = colorThemes[themeKey];
+        currentDialHex = t.dial;
 
-        mats.gold.color.setHex(t.gold);
-        mats.dial.map = createDialTexture(t.dial);
-        mats.bezelInsert.map = createBezelTexture(t.bezel);
+        const newDialTex = createDialTexture(t.dial);
+        const newBezelTex = createBezelTexture(t.bezel);
+
+        allWatchMeshes.forEach(m => {
+            const key = m.material.userData.baseKey;
+            if (key === 'gold') m.material.color.setHex(t.gold);
+            if (key === 'dial') m.material.map = newDialTex;
+            if (key === 'bezelInsert') m.material.map = newBezelTex;
+        });
         activeSpec.innerText = t.spec;
     });
 });
@@ -534,7 +584,7 @@ colorBtns.forEach(btn => {
 // Komplikasi Horologi (Putar Bezel & Tambah Tanggal)
 let targetBezelRot = 0;
 document.getElementById('btn-bezel-click').addEventListener('click', () => {
-    targetBezelRot += (Math.PI * 2) / 24; // Berputar setiap diklik
+    targetBezelRot += (Math.PI * 2) / 24;
 });
 
 document.querySelectorAll('.quick-focus').forEach(btn => {
@@ -546,7 +596,12 @@ document.querySelectorAll('.quick-focus').forEach(btn => {
             updateExplodeUI(0);
         } else if (target === '4') {
             currentDateNumber = (currentDateNumber % 31) + 1;
-            mats.dateDisc.map = createDateTexture();
+            const newDateTex = createDateTexture();
+            const newDialTex = createDialTexture(currentDialHex);
+            allWatchMeshes.forEach(m => {
+                if (m.material.userData.baseKey === 'dateDisc') m.material.map = newDateTex;
+                if (m.material.userData.baseKey === 'dial') m.material.map = newDialTex;
+            });
             btn.innerText = `Tanggal (${currentDateNumber}): +1`;
         } else {
             selectLayer(parseInt(target));
@@ -555,22 +610,21 @@ document.querySelectorAll('.quick-focus').forEach(btn => {
 });
 
 // ============================================================================
-// 6. LOOP ANIMASI REAL-TIME (DETAK JAM, GEAR MESIN, & RENDER)
+// 6. LOOP ANIMASI REAL-TIME
 // ============================================================================
 const clockEl = document.getElementById('live-clock');
 
 function animate() {
     requestAnimationFrame(animate);
 
-    // 1. Update Jam Digital & Jarum Jam 3D sesuai waktu sekarang
+    // 1. Update Jam Digital & Putaran Jarum Jam
     const now = new Date();
     const hrs = String(now.getHours()).padStart(2, '0');
     const mins = String(now.getMinutes()).padStart(2, '0');
     const secs = String(now.getSeconds()).padStart(2, '0');
     clockEl.innerText = `${hrs}:${mins}:${secs}`;
 
-    const ms = now.getMilliseconds();
-    const smoothSec = now.getSeconds() + ms / 1000;
+    const smoothSec = now.getSeconds() + now.getMilliseconds() / 1000;
     const smoothMin = now.getMinutes() + smoothSec / 60;
     const smoothHr = (now.getHours() % 12) + smoothMin / 60;
 
@@ -578,16 +632,16 @@ function animate() {
     minHand.rotation.y = -(smoothMin / 60) * Math.PI * 2;
     hourHand.rotation.y = -(smoothHr / 12) * Math.PI * 2;
 
-    // 2. Putar Roda Gigi Mesin & Rotor di Lapisan 7
+    // 2. Putar Roda Gigi Mesin & Rotor di Lapisan 07
     gear1.rotation.y += 0.02;
     gear2.rotation.y -= 0.025;
     rotorMesh.rotation.y += 0.015;
     balanceWheel.rotation.z = Math.sin(Date.now() * 0.015) * 0.25;
 
-    // 3. Animasi Putar Bezel Halus
+    // 3. Animasi Putar Bezel
     bezelGroup.rotation.y += (targetBezelRot - bezelGroup.rotation.y) * 0.1;
 
-    // 4. Animasi Otomatis Bedah Layer (Jika tombol diaktifkan)
+    // 4. Animasi Otomatis Bedah Layer
     if (autoAnimateExplode) {
         targetExplode += 0.006 * animDirection;
         if (targetExplode >= 1) {
@@ -600,10 +654,11 @@ function animate() {
         updateExplodeUI(targetExplode);
     }
 
-    // 5. Gerakkan setiap Lapisan secara mulus (Interpolasi / Lerp)
+    // 5. Posisi setiap layer = Posisi Dasar (baseY) + Jarak Bedah (explodeY * currentExplode)
+    // Inilah rahasianya kenapa saat 0% OPEN jam tangan tetap rapi dan tidak saling menelan!
     currentExplode += (targetExplode - currentExplode) * 0.08;
     for (let i = 0; i < 7; i++) {
-        layerGroups[i].position.y = layerInfos[i].explodeY * currentExplode;
+        layerGroups[i].position.y = layerInfos[i].baseY + (layerInfos[i].explodeY * currentExplode);
     }
 
     controls.update();
@@ -612,7 +667,6 @@ function animate() {
 
 animate();
 
-// Menyesuaikan ukuran layar jika jendela browser diubah ukurannya
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
